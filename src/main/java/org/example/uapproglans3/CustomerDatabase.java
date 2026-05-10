@@ -4,18 +4,43 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CustomerDatabase {
-    private List<Customer> customers;
+// SRP: Memisahkan tanggung jawab pengelolaan file (I/O) ke kelas terpisah
+class CustomerFileManager {
     private final String filePath = "customers.dat";
 
+    public void saveCustomers(List<Customer> customers) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath))) {
+            oos.writeObject(customers);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<Customer> loadCustomers() {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath))) {
+            return (List<Customer>) ois.readObject();
+        } catch (FileNotFoundException e) {
+            // File not found, starting with an empty list
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return new ArrayList<>();
+    }
+}
+
+public class CustomerDatabase {
+    private List<Customer> customers;
+    private final CustomerFileManager fileManager;
+
     public CustomerDatabase() {
-        customers = new ArrayList<>();
-        loadCustomers();
+        this.fileManager = new CustomerFileManager();
+        this.customers = fileManager.loadCustomers();
     }
 
     public void addCustomer(Customer customer) {
         customers.add(customer);
-        saveCustomers();
+        fileManager.saveCustomers(customers);
     }
 
     public List<Customer> getCustomers() {
@@ -24,29 +49,11 @@ public class CustomerDatabase {
 
     public void updateCustomer(int index, Customer customer) {
         customers.set(index, customer);
-        saveCustomers();
+        fileManager.saveCustomers(customers);
     }
 
     public void deleteCustomer(int index) {
         customers.remove(index);
-        saveCustomers();
-    }
-
-    private void saveCustomers() {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath))) {
-            oos.writeObject(customers);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void loadCustomers() {
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath))) {
-            customers = (List<Customer>) ois.readObject();
-        } catch (FileNotFoundException e) {
-            // File not found, starting with an empty list
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+        fileManager.saveCustomers(customers);
     }
 }
