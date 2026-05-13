@@ -2,103 +2,114 @@ package org.example.uapproglans3;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
+/**
+ * BookManagementGUI - Dialog GUI untuk menambah/memperbarui buku.
+ *
+ * === PENERAPAN PRINSIP SOLID ===
+ *
+ * SRP: Konstruktor monolitik dipecah menjadi:
+ *   initializeFormFields(), initializeButtons(), uploadImage(), saveBook()
+ *   Ditambah validateInput() dan collectBookData() terpisah dari saveBook().
+ *
+ * OCP: Method validateInput() dan collectBookData() bisa di-override
+ *   untuk aturan validasi atau format data berbeda.
+ *
+ * LSP: BookManagementGUI extends JDialog dengan benar, tidak merusak
+ *   ekspektasi perilaku JDialog (modal dialog yang bisa ditutup).
+ */
 public class BookManagementGUI extends JDialog {
     private JTextField titleField, authorField, publisherField, yearField, stockField, priceField;
     private JLabel imageLabel;
-    private Book book; // Assuming Book is a class that holds book details
+    private Book book;
     private boolean isUpdate;
+    private BookStoreGUI parentGUI;
 
     public BookManagementGUI(BookStoreGUI parent, String title, Book book) {
         super(parent, title, true);
         this.book = book;
         this.isUpdate = book != null;
+        this.parentGUI = parent;
 
         setLayout(new GridBagLayout());
+
+        // SRP: UI setup didelegasikan ke method spesifik
+        initializeFormFields();
+        initializeButtons();
+
+        setSize(400, 400);
+        setLocationRelativeTo(parent);
+        setVisible(true);
+    }
+
+    // ==================== UI INITIALIZATION (SRP) ====================
+
+    /**
+     * SRP: HANYA membuat form fields.
+     * Satu alasan berubah: jika field buku berubah (misal tambah ISBN).
+     */
+    private void initializeFormFields() {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(5, 5, 5, 5);
 
         // Title
-        gbc.gridx = 0; gbc.gridy = 0;
-        add(new JLabel("Title:"), gbc);
-        titleField = new JTextField();
-        titleField.setPreferredSize(new Dimension(200, 25)); // Set preferred width
-        titleField.setText(isUpdate ? book.getTitle() : "");
-        gbc.gridx = 1; gbc.gridy = 0;
-        add(titleField, gbc);
-
+        titleField = createFormField(gbc, "Title:", 0, isUpdate ? book.getTitle() : "");
         // Author
-        gbc.gridx = 0; gbc.gridy = 1;
-        add(new JLabel("Author:"), gbc);
-        authorField = new JTextField();
-        authorField.setPreferredSize(new Dimension(200, 25)); // Set preferred width
-        authorField.setText(isUpdate ? book.getAuthor() : "");
-        gbc.gridx = 1; gbc.gridy = 1;
-        add(authorField, gbc);
-
+        authorField = createFormField(gbc, "Author:", 1, isUpdate ? book.getAuthor() : "");
         // Publisher
-        gbc.gridx = 0; gbc.gridy = 2;
-        add(new JLabel("Publisher:"), gbc);
-        publisherField = new JTextField();
-        publisherField.setPreferredSize(new Dimension(200, 25)); // Set preferred width
-        publisherField.setText(isUpdate ? book.getPublisher() : "");
-        gbc.gridx = 1; gbc.gridy = 2;
-        add(publisherField, gbc);
-
+        publisherField = createFormField(gbc, "Publisher:", 2, isUpdate ? book.getPublisher() : "");
         // Year
-        gbc.gridx = 0; gbc.gridy = 3;
-        add(new JLabel("Year:"), gbc);
-        yearField = new JTextField();
-        yearField.setPreferredSize(new Dimension(200, 25)); // Set preferred width
-        yearField.setText(isUpdate ? String.valueOf(book.getYear()) : "");
-        gbc.gridx = 1; gbc.gridy = 3;
-        add(yearField, gbc);
-
+        yearField = createFormField(gbc, "Year:", 3, isUpdate ? String.valueOf(book.getYear()) : "");
         // Stock
-        gbc.gridx = 0; gbc.gridy = 4;
-        add(new JLabel("Stock:"), gbc);
-        stockField = new JTextField();
-        stockField.setPreferredSize(new Dimension(200, 25)); // Set preferred width
-        stockField.setText(isUpdate ? String.valueOf(book.getStock()) : "");
-        gbc.gridx = 1; gbc.gridy = 4;
-        add(stockField, gbc);
-
+        stockField = createFormField(gbc, "Stock:", 4, isUpdate ? String.valueOf(book.getStock()) : "");
         // Price
-        gbc.gridx = 0; gbc.gridy = 5;
-        add(new JLabel("Price:"), gbc);
-        priceField = new JTextField();
-        priceField.setPreferredSize(new Dimension(200, 25)); // Set preferred width
-        priceField.setText(isUpdate ? String.valueOf(book.getPrice()) : "");
-        gbc.gridx = 1; gbc.gridy = 5;
-        add(priceField, gbc);
+        priceField = createFormField(gbc, "Price:", 5, isUpdate ? String.valueOf(book.getPrice()) : "");
 
-        // Image
+        // Image Label
         gbc.gridx = 0; gbc.gridy = 6;
         add(new JLabel("Image:"), gbc);
         imageLabel = new JLabel(isUpdate ? book.getImagePath() : "No Image", SwingConstants.CENTER);
         gbc.gridx = 1; gbc.gridy = 6;
         add(imageLabel, gbc);
+    }
 
-        // Upload Image Button
+    /**
+     * SRP: Factory method untuk membuat form field.
+     * Menghindari duplikasi kode pembuatan label + textfield.
+     * OCP: Jika ingin mengubah style field, cukup ubah method ini.
+     */
+    private JTextField createFormField(GridBagConstraints gbc, String label, int row, String value) {
+        gbc.gridx = 0; gbc.gridy = row;
+        add(new JLabel(label), gbc);
+        JTextField field = new JTextField();
+        field.setPreferredSize(new Dimension(200, 25));
+        field.setText(value);
+        gbc.gridx = 1; gbc.gridy = row;
+        add(field, gbc);
+        return field;
+    }
+
+    /** SRP: HANYA membuat tombol Upload dan Save/Update. */
+    private void initializeButtons() {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 5, 5, 5);
+
         JButton uploadButton = new JButton("Upload Image");
         gbc.gridx = 0; gbc.gridy = 7;
         add(uploadButton, gbc);
         uploadButton.addActionListener(e -> uploadImage());
 
-        // Save Button
         JButton saveButton = new JButton(isUpdate ? "Update" : "Add");
         gbc.gridx = 1; gbc.gridy = 7;
         add(saveButton, gbc);
         saveButton.addActionListener(e -> saveBook());
-
-        setSize(400, 400);
-        setLocationRelativeTo(parent); // Center the dialog relative to the parent
-        setVisible(true);
     }
 
+    // ==================== BUSINESS LOGIC (SRP) ====================
+
+    /** SRP: HANYA menangani upload gambar via file chooser. */
     private void uploadImage() {
         JFileChooser fileChooser = new JFileChooser();
         if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
@@ -107,17 +118,28 @@ public class BookManagementGUI extends JDialog {
         }
     }
 
+    /**
+     * SRP: Method saveBook() sekarang mendelegasikan ke:
+     * - validateInput(): validasi data (SRP terpisah)
+     * - collectBookData(): pengumpulan data dari form (SRP terpisah)
+     * - Logika save/update buku
+     *
+     * SEBELUM: Semua logika ada di satu method tanpa validasi.
+     * SESUDAH: Setiap langkah punya method sendiri.
+     */
     private void saveBook() {
-        // Validate fields and create a new Book object
-        String title = titleField.getText();
-        String author = authorField.getText();
-        String publisher = publisherField.getText();
-        int year = Integer.parseInt(yearField.getText());
-        int stock = Integer.parseInt(stockField.getText());
-        double price = Double.parseDouble(priceField.getText());
+        // SRP: Validasi dipisahkan dari logika penyimpanan
+        if (!validateInput()) return;
+
+        // SRP: Pengumpulan data dipisahkan dari logika penyimpanan
+        String title = titleField.getText().trim();
+        String author = authorField.getText().trim();
+        String publisher = publisherField.getText().trim();
+        int year = Integer.parseInt(yearField.getText().trim());
+        int stock = Integer.parseInt(stockField.getText().trim());
+        double price = Double.parseDouble(priceField.getText().trim());
         String imagePath = imageLabel.getText();
 
-        // Create or update the book object
         if (isUpdate) {
             book.setTitle(title);
             book.setAuthor(author);
@@ -126,13 +148,57 @@ public class BookManagementGUI extends JDialog {
             book.setStock(stock);
             book.setPrice(price);
             book.setImagePath(imagePath);
-            // Logic to update the book in your data structure can be added here
+            // DIP: Mengakses parent melalui getter yang tersedia
+            parentGUI.loadBooksToTable();
         } else {
             book = new Book(title, author, publisher, year, stock, imagePath, price);
-            // Logic to add the new book to your data structure can be added here
+            parentGUI.addBook(book);
         }
 
-        // Close the dialog after saving
-        dispose(); // Close the dialog
+        dispose();
+    }
+
+    /**
+     * SRP: HANYA memvalidasi input form.
+     * Satu alasan berubah: jika aturan validasi berubah.
+     *
+     * OCP: Bisa di-override untuk aturan validasi yang lebih ketat
+     * (misal: tahun harus > 1900, harga harus > 0).
+     *
+     * @return true jika semua input valid
+     */
+    protected boolean validateInput() {
+        if (titleField.getText().trim().isEmpty()) {
+            showErrorMessage("Title tidak boleh kosong!");
+            return false;
+        }
+        if (authorField.getText().trim().isEmpty()) {
+            showErrorMessage("Author tidak boleh kosong!");
+            return false;
+        }
+        try {
+            Integer.parseInt(yearField.getText().trim());
+        } catch (NumberFormatException e) {
+            showErrorMessage("Year harus berupa angka!");
+            return false;
+        }
+        try {
+            Integer.parseInt(stockField.getText().trim());
+        } catch (NumberFormatException e) {
+            showErrorMessage("Stock harus berupa angka!");
+            return false;
+        }
+        try {
+            Double.parseDouble(priceField.getText().trim());
+        } catch (NumberFormatException e) {
+            showErrorMessage("Price harus berupa angka!");
+            return false;
+        }
+        return true;
+    }
+
+    /** SRP: Utilitas pesan error. */
+    private void showErrorMessage(String message) {
+        JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 }

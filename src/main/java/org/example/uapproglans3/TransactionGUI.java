@@ -3,143 +3,222 @@ package org.example.uapproglans3;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
+/**
+ * TransactionGUI - GUI untuk proses transaksi pembelian buku.
+ *
+ * === PENERAPAN PRINSIP SOLID ===
+ *
+ * SRP: Konstruktor monolitik dipecah menjadi method fokus:
+ *   initializeUI(), initializeFormFields(), initializeButtonPanel(), initializeBookTable()
+ *   Business logic dipisah: findBookByTitle(), addToCart(), viewCart()
+ *
+ * DIP: Mengakses dependency melalui getter parent (getCustomerDatabase(),
+ *   getBookDatabase(), getCart()), bukan field internal langsung.
+ *
+ * OCP: Method addToCart() dan findBookByTitle() bisa di-override subclass
+ *   untuk logika bisnis berbeda tanpa modifikasi kode ini.
+ */
 public class TransactionGUI extends JDialog {
     private JTextField transactionCodeField, bookCodeField, quantityField;
-    private JComboBox<String> customerComboBox; // Dropdown untuk pelanggan
+    private JComboBox<String> customerComboBox;
     private BookStoreGUI parent;
 
     public TransactionGUI(BookStoreGUI parent) {
         super(parent, "Transaksi", true);
         this.parent = parent;
 
-        // Set layout and size
+        // SRP: Setup UI didelegasikan ke method terpisah
+        initializeUI();
+        setVisible(true);
+    }
+
+    // ==================== UI INITIALIZATION (SRP) ====================
+
+    /** SRP: HANYA mengatur layout dasar dan mendelegasikan ke method spesifik. */
+    private void initializeUI() {
         setLayout(new GridBagLayout());
         setSize(600, 500);
-        setLocationRelativeTo(parent); // Center
+        setLocationRelativeTo(parent);
 
+        initializeTitle();
+        initializeFormFields();
+        initializeButtonPanel();
+        initializeBookTable();
+    }
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(10, 10, 10, 10); // Add padding
-
-        // Title
+    /** SRP: HANYA membuat judul halaman transaksi. */
+    private void initializeTitle() {
+        GridBagConstraints gbc = createGBC(0, 0);
+        gbc.gridwidth = 2;
         JLabel titleLabel = new JLabel("Transaksi Buku");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
         titleLabel.setForeground(Color.BLUE);
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2; // Span across two columns
         add(titleLabel, gbc);
+    }
 
+    /** SRP: HANYA membuat form fields (kode transaksi, pelanggan, buku, jumlah). */
+    private void initializeFormFields() {
         // Kode Transaksi
-        gbc.gridwidth = 1; // Reset to default
-        gbc.gridx = 0;
-        gbc.gridy = 1;
+        GridBagConstraints gbc = createGBC(0, 1);
         add(new JLabel("Kode Transaksi:"), gbc);
         transactionCodeField = new JTextField("TRANS" + System.currentTimeMillis());
         transactionCodeField.setEditable(false);
-        gbc.gridx = 1;
+        gbc = createGBC(1, 1);
         add(transactionCodeField, gbc);
 
-        // Kode Pelanggan
-        gbc.gridx = 0;
-        gbc.gridy = 2;
+        // Kode Pelanggan (DIP: akses via getter, bukan field langsung)
+        gbc = createGBC(0, 2);
         add(new JLabel("Kode Pelanggan:"), gbc);
         customerComboBox = new JComboBox<>();
-        loadCustomersToComboBox(); // Load customers into the combo box
-        gbc.gridx = 1;
+        loadCustomersToComboBox();
+        gbc = createGBC(1, 2);
         add(customerComboBox, gbc);
 
         // Kode Buku
-        gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc = createGBC(0, 3);
         add(new JLabel("Kode Buku:"), gbc);
         bookCodeField = new JTextField();
-        bookCodeField.setEditable(false); // Kode buku tidak bisa diedit
-        gbc.gridx = 1;
+        bookCodeField.setEditable(false);
+        gbc = createGBC(1, 3);
         add(bookCodeField, gbc);
 
         // Jumlah
-        gbc.gridx = 0;
-        gbc.gridy = 4;
+        gbc = createGBC(0, 4);
         add(new JLabel("Jumlah:"), gbc);
         quantityField = new JTextField();
-        gbc.gridx = 1;
+        gbc = createGBC(1, 4);
         add(quantityField, gbc);
+    }
 
-        // Button Panel
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout());
-
+    /** SRP: HANYA membuat panel tombol aksi. */
+    private void initializeButtonPanel() {
+        JPanel buttonPanel = new JPanel(new FlowLayout());
         JButton addToCartButton = new JButton("Tambah ke Keranjang");
         JButton viewCartButton = new JButton("Lihat Keranjang");
         buttonPanel.add(addToCartButton);
         buttonPanel.add(viewCartButton);
 
-        gbc.gridx = 0;
-        gbc.gridy = 5;
-        gbc.gridwidth = 2; // Span across two columns
+        GridBagConstraints gbc = createGBC(0, 5);
+        gbc.gridwidth = 2;
         add(buttonPanel, gbc);
 
-        // Tabel Buku
+        addToCartButton.addActionListener(e -> addToCart());
+        viewCartButton.addActionListener(e -> viewCart());
+    }
+
+    /** SRP: HANYA membuat tabel daftar buku untuk dipilih. */
+    private void initializeBookTable() {
         JTable bookTable = new JTable(parent.getBookTableModel());
         bookTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         bookTable.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 int row = bookTable.getSelectedRow();
                 if (row != -1) {
-                    String bookCode = (String) bookTable.getValueAt(row, 0); // Ambil kode buku dari tabel
-                    bookCodeField.setText(bookCode); // Set kode buku ke field
+                    String bookCode = (String) bookTable.getValueAt(row, 0);
+                    bookCodeField.setText(bookCode);
                 }
             }
         });
 
-        // Mengatur lebar kolom tabel
         bookTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         JScrollPane scrollPane = new JScrollPane(bookTable);
-        scrollPane.setPreferredSize(new Dimension(550, 150)); // Mengatur ukuran scroll pane
+        scrollPane.setPreferredSize(new Dimension(550, 150));
 
-        gbc.gridx = 0;
-        gbc.gridy = 6;
-        gbc.gridwidth = 2; // Span across two columns
+        GridBagConstraints gbc = createGBC(0, 6);
+        gbc.gridwidth = 2;
         add(scrollPane, gbc);
-
-        // Action Listeners
-        addToCartButton.addActionListener(e -> addToCart());
-        viewCartButton.addActionListener(e -> viewCart());
-
-        setVisible(true);
     }
 
+    // ==================== HELPER METHODS (SRP) ====================
+
+    /** SRP: Factory method untuk GridBagConstraints, menghindari duplikasi kode. */
+    private GridBagConstraints createGBC(int gridx, int gridy) {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.gridx = gridx;
+        gbc.gridy = gridy;
+        gbc.gridwidth = 1;
+        return gbc;
+    }
+
+    // ==================== BUSINESS LOGIC (SRP + DIP) ====================
+
+    /**
+     * SRP: HANYA memuat data pelanggan ke combo box.
+     * DIP: Mengakses CustomerDatabase melalui getter parent,
+     *   bukan field internal langsung (parent.customerDatabase).
+     */
     private void loadCustomersToComboBox() {
-        for (Customer customer : parent.customerDatabase.getCustomers()) {
+        for (Customer customer : parent.getCustomerDatabase().getCustomers()) {
             customerComboBox.addItem(customer.getId() + " - " + customer.getName());
         }
     }
 
-    private void addToCart() {
-        String transactionCode = transactionCodeField.getText();
+    /**
+     * SRP: HANYA menangani logika penambahan buku ke keranjang.
+     * Terpisah dari UI setup dan event handling.
+     *
+     * OCP: Bisa di-override untuk aturan bisnis berbeda
+     *   (misal: cek minimum order, diskon quantity).
+     */
+    protected void addToCart() {
         String selectedCustomer = (String) customerComboBox.getSelectedItem();
-        String customerId = selectedCustomer.split(" - ")[0]; // Ambil ID pelanggan
-        String bookCode = bookCodeField.getText();
-        int quantity = Integer.parseInt(quantityField.getText());
-
-        // Ambil informasi buku dari database
-        for (Book book : parent.bookDatabase.getBooks()) {
-            if (book.getTitle().equals(bookCode)) {
-                CartItem item = new CartItem(book.getTitle(), book.getTitle(), quantity, book.getPrice());
-                parent.getCart().addItem(item); // Tambahkan item ke keranjang
-                JOptionPane.showMessageDialog(this, "Buku ditambahkan ke keranjang!", "Success", JOptionPane.INFORMATION_MESSAGE);
-                return;
-            }
+        if (selectedCustomer == null) {
+            showErrorMessage("Pilih pelanggan terlebih dahulu!");
+            return;
         }
-        JOptionPane.showMessageDialog(this, "Buku tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
+
+        String bookCode = bookCodeField.getText();
+        if (bookCode.isEmpty()) {
+            showErrorMessage("Pilih buku dari tabel terlebih dahulu!");
+            return;
+        }
+
+        // SRP: Validasi input dipisahkan dari logika bisnis
+        int quantity = parseQuantity();
+        if (quantity <= 0) return;
+
+        // SRP: Pencarian buku didelegasikan ke method terpisah
+        Book book = findBookByTitle(bookCode);
+        if (book != null) {
+            CartItem item = new CartItem(book.getTitle(), book.getTitle(), quantity, book.getPrice());
+            parent.getCart().addItem(item);
+            JOptionPane.showMessageDialog(this, "Buku ditambahkan ke keranjang!", "Success", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            showErrorMessage("Buku tidak ditemukan!");
+        }
     }
 
+    /** SRP: HANYA validasi dan parsing input jumlah. */
+    private int parseQuantity() {
+        try {
+            return Integer.parseInt(quantityField.getText());
+        } catch (NumberFormatException e) {
+            showErrorMessage("Jumlah harus berupa angka!");
+            return -1;
+        }
+    }
+
+    /**
+     * SRP: HANYA mencari buku berdasarkan judul.
+     * DIP: Mengakses BookDatabase melalui getter parent.
+     */
+    protected Book findBookByTitle(String title) {
+        for (Book book : parent.getBookDatabase().getBooks()) {
+            if (book.getTitle().equals(title)) return book;
+        }
+        return null;
+    }
+
+    /** SRP: HANYA membuka dialog keranjang. */
     private void viewCart() {
-        new CartGUI(parent.getCart(), parent, customerComboBox.getSelectedItem().toString()); // Tampilkan keranjang dengan ID pelanggan
+        new CartGUI(parent.getCart(), parent, customerComboBox.getSelectedItem().toString());
+    }
+
+    /** SRP: Utilitas pesan error, menghindari duplikasi JOptionPane. */
+    private void showErrorMessage(String message) {
+        JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 }
