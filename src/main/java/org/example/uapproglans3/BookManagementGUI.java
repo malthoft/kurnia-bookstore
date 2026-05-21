@@ -10,9 +10,11 @@ public class BookManagementGUI extends JDialog {
     private JLabel imageLabel;
     private Book book; // Assuming Book is a class that holds book details
     private boolean isUpdate;
+    private BookStoreGUI parentGUI;
 
     public BookManagementGUI(BookStoreGUI parent, String title, Book book) {
         super(parent, title, true);
+        this.parentGUI = parent;
         this.book = book;
         this.isUpdate = book != null;
 
@@ -108,31 +110,41 @@ public class BookManagementGUI extends JDialog {
     }
 
     private void saveBook() {
-        // Validate fields and create a new Book object
-        String title = titleField.getText();
-        String author = authorField.getText();
-        String publisher = publisherField.getText();
-        int year = Integer.parseInt(yearField.getText());
-        int stock = Integer.parseInt(stockField.getText());
-        double price = Double.parseDouble(priceField.getText());
-        String imagePath = imageLabel.getText();
+        try {
+            // Validate fields and create a new Book object
+            String title = titleField.getText();
+            String author = authorField.getText();
+            String publisher = publisherField.getText();
+            int year = Integer.parseInt(yearField.getText());
+            int stock = Integer.parseInt(stockField.getText());
+            double price = Double.parseDouble(priceField.getText());
+            String imagePath = imageLabel.getText();
 
-        // Create or update the book object
-        if (isUpdate) {
-            book.setTitle(title);
-            book.setAuthor(author);
-            book.setPublisher(publisher);
-            book.setYear(year);
-            book.setStock(stock);
-            book.setPrice(price);
-            book.setImagePath(imagePath);
-            // Logic to update the book in your data structure can be added here
-        } else {
-            book = new Book(title, author, publisher, year, stock, imagePath, price);
-            // Logic to add the new book to your data structure can be added here
+            // Create or update the book object
+            if (isUpdate) {
+                book.setTitle(title);
+                book.setAuthor(author);
+                book.setPublisher(publisher);
+                book.setYear(year);
+                book.setStock(stock);
+                book.setPrice(price);
+                book.setImagePath(imagePath);
+                
+                int index = parentGUI.bookDatabase.getBooks().indexOf(book);
+                if (index != -1) {
+                    parentGUI.updateBook(index, book);
+                } else {
+                    parentGUI.loadBooksToTable(); // Fallback if index not found
+                }
+            } else {
+                book = new Book(title, author, publisher, year, stock, imagePath, price);
+                parentGUI.addBook(book);
+            }
+
+            // Close the dialog after saving
+            dispose();
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Pastikan input Tahun, Stok, dan Harga berupa angka yang valid!", "Input Error", JOptionPane.ERROR_MESSAGE);
         }
-
-        // Close the dialog after saving
-        dispose(); // Close the dialog
     }
 }
