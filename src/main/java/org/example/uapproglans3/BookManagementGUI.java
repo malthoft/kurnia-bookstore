@@ -27,6 +27,7 @@ public class BookManagementGUI extends JDialog {
 
     public BookManagementGUI(BookStoreGUI parent, String title, Book book) {
         super(parent, title, true);
+        this.parentGUI = parent;
         this.book = book;
         this.isUpdate = book != null;
         this.parentGUI = parent;
@@ -148,8 +149,13 @@ public class BookManagementGUI extends JDialog {
             book.setStock(stock);
             book.setPrice(price);
             book.setImagePath(imagePath);
-            // DIP: Mengakses parent melalui getter yang tersedia
-            parentGUI.loadBooksToTable();
+            
+            int index = parentGUI.bookDatabase.getBooks().indexOf(book);
+            if (index != -1) {
+                parentGUI.updateBook(index, book);
+            } else {
+                parentGUI.loadBooksToTable();
+            }
         } else {
             book = new Book(title, author, publisher, year, stock, imagePath, price);
             parentGUI.addBook(book);
