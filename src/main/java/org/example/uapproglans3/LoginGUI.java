@@ -3,64 +3,16 @@ package org.example.uapproglans3;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * LoginGUI - Kelas GUI untuk halaman login aplikasi Toko Buku Kurnia.
- *
- * === PENERAPAN PRINSIP SOLID ===
- *
- * 1. SRP (Single Responsibility Principle):
- *    - SEBELUM: Konstruktor menangani SEMUA hal sekaligus: setup header,
- *      setup form, setup tombol, logika autentikasi, dan navigasi.
- *      Jika ada perubahan desain header ATAU perubahan cara login,
- *      konstruktor yang sama harus diubah → banyak alasan untuk berubah.
- *    - SESUDAH: Tanggung jawab dipecah menjadi method spesifik:
- *      * initializeUI() → mengatur window utama
- *      * initializeHeader() → HANYA membuat header/logo
- *      * initializeForm() → HANYA membuat form input
- *      * initializeButtons() → HANYA membuat tombol
- *      * authenticate() → HANYA logika validasi kredensial
- *      * onLoginSuccess() → HANYA logika setelah login berhasil
- *      * onLoginFailed() → HANYA logika setelah login gagal
- *      Sekarang setiap method punya SATU alasan untuk berubah.
- *
- * 2. OCP (Open/Closed Principle):
- *    - SEBELUM: Logika autentikasi di-hardcode di dalam lambda listener.
- *      Untuk mengubah mekanisme autentikasi (misal dari hardcode ke database),
- *      harus MEMODIFIKASI kode yang sudah ada → melanggar OCP.
- *    - SESUDAH: Method authenticate() di-extract sebagai method terpisah
- *      yang bisa di-OVERRIDE oleh subclass tanpa mengubah kode LoginGUI.
- *      Contoh: class DatabaseLoginGUI extends LoginGUI bisa override
- *      authenticate() untuk cek ke database, tanpa ubah LoginGUI sama sekali.
- *      Seperti stopkontak: "tertutup" untuk modifikasi kabel internal,
- *      tapi "terbuka" untuk colokan baru (subclass baru).
- *
- * 3. DIP (Dependency Inversion Principle):
- *    - SEBELUM: Langsung memanggil `new BookStoreGUI()` di dalam listener.
- *      LoginGUI "bergantung" langsung pada kelas konkret BookStoreGUI.
- *    - SESUDAH: Navigasi setelah login berhasil diisolasi di method
- *      onLoginSuccess() yang bisa di-override. Ini mengurangi tight coupling
- *      dan memungkinkan pengujian tanpa membuka BookStoreGUI yang sebenarnya.
- */
 public class LoginGUI extends JFrame {
 
-    // ==================== FIELD DECLARATIONS ====================
-    // SRP: Field hanya berisi komponen UI yang diperlukan untuk login
     private JTextField usernameField;
     private JPasswordField passwordField;
 
-    // ==================== CONSTRUCTOR ====================
 
     public LoginGUI() {
         initializeUI();
     }
 
-    // ==================== UI INITIALIZATION (SRP) ====================
-    // Setiap method bertanggung jawab atas SATU bagian UI saja.
-
-    /**
-     * SRP: Method ini HANYA mengatur properti window utama
-     * dan mendelegasikan pembuatan komponen ke method spesifik.
-     */
     private void initializeUI() {
         setTitle("Kurnia BookStore - Login");
         setSize(400, 300);
@@ -68,7 +20,6 @@ public class LoginGUI extends JFrame {
         setLayout(new BorderLayout());
         setResizable(false);
 
-        // SRP: Setiap bagian UI dibuat oleh method yang fokus
         initializeHeader();
         initializeForm();
         initializeButtons();
@@ -78,10 +29,6 @@ public class LoginGUI extends JFrame {
         setVisible(true);
     }
 
-    /**
-     * SRP: Method ini HANYA bertanggung jawab untuk membuat header panel.
-     * Satu alasan berubah: jika desain header/logo berubah.
-     */
     private void initializeHeader() {
         JPanel headerPanel = new JPanel();
         headerPanel.setBackground(new Color(50, 150, 250));
@@ -101,10 +48,6 @@ public class LoginGUI extends JFrame {
         add(headerPanel, BorderLayout.NORTH);
     }
 
-    /**
-     * SRP: Method ini HANYA bertanggung jawab untuk membuat form login.
-     * Satu alasan berubah: jika field form berubah (misal tambah "Remember Me").
-     */
     private void initializeForm() {
         JPanel formPanel = new JPanel();
         formPanel.setLayout(new GridBagLayout());
@@ -131,10 +74,6 @@ public class LoginGUI extends JFrame {
         add(formPanel, BorderLayout.CENTER);
     }
 
-    /**
-     * SRP: Method ini HANYA bertanggung jawab untuk membuat panel tombol.
-     * Satu alasan berubah: jika tampilan/jumlah tombol berubah.
-     */
     private void initializeButtons() {
         JPanel buttonPanel = new JPanel();
         buttonPanel.setBackground(Color.WHITE);
@@ -143,8 +82,6 @@ public class LoginGUI extends JFrame {
         loginButton.setForeground(Color.WHITE);
         loginButton.setFocusPainted(false);
 
-        // SRP: Listener hanya memanggil method handleLogin(),
-        // tidak berisi logika bisnis secara langsung.
         loginButton.addActionListener(e -> handleLogin());
 
         buttonPanel.add(loginButton);

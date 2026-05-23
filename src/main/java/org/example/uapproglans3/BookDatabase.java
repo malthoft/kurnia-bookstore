@@ -4,14 +4,11 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-// 1. Interface BookRepository sebagai jembatan abstraksi (Memenuhi DIP dan OCP)
 interface BookRepository {
     void saveBooks(List<Book> books);
     List<Book> loadBooks();
 }
 
-// 2. Class FileBookRepository khusus mengurus simpan/memuat dari file (Memenuhi SRP)
-// Jika besok ingin pakai MySQL, tinggal buat class MySQLBookRepository tanpa ubah logika bisnis.
 class FileBookRepository implements BookRepository {
     private final String filePath;
 
@@ -43,13 +40,10 @@ class FileBookRepository implements BookRepository {
     }
 }
 
-// 3. Class BookService (sebelumnya BookDatabase), bertindak sebagai Manajer
-// Hanya fokus mengurus logika bisnis daftar buku (Memenuhi SRP)
 class BookService {
     private List<Book> books;
     private final BookRepository repository;
 
-    // Bergantung pada abstraksi interface (BookRepository), bukan implementasi spesifik (Memenuhi DIP)
     public BookService(BookRepository repository) {
         this.repository = repository;
         this.books = repository.loadBooks();
@@ -75,14 +69,10 @@ class BookService {
     }
 }
 
-// Class public BookDatabase tetap dipertahankan sebagai wrapper (pembungkus)
-// Agar nama file 'BookDatabase.java' tetap valid dan kode lain (misal GUI/Main) yang menggunakan
-// kelas ini tidak error karena perubahan nama kelas menjadi BookService.
 public class BookDatabase {
     private final BookService service;
 
     public BookDatabase() {
-        // Injeksi dependensi: menggunakan FileBookRepository untuk memuat dari "books.dat"
         BookRepository repo = new FileBookRepository("books.dat");
         this.service = new BookService(repo);
     }

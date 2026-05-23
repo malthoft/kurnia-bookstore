@@ -3,21 +3,7 @@ package org.example.uapproglans3;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * BookManagementGUI - Dialog GUI untuk menambah/memperbarui buku.
- *
- * === PENERAPAN PRINSIP SOLID ===
- *
- * SRP: Konstruktor monolitik dipecah menjadi:
- *   initializeFormFields(), initializeButtons(), uploadImage(), saveBook()
- *   Ditambah validateInput() dan collectBookData() terpisah dari saveBook().
- *
- * OCP: Method validateInput() dan collectBookData() bisa di-override
- *   untuk aturan validasi atau format data berbeda.
- *
- * LSP: BookManagementGUI extends JDialog dengan benar, tidak merusak
- *   ekspektasi perilaku JDialog (modal dialog yang bisa ditutup).
- */
+
 public class BookManagementGUI extends JDialog {
     private JTextField titleField, authorField, publisherField, yearField, stockField, priceField;
     private JLabel imageLabel;
@@ -43,12 +29,6 @@ public class BookManagementGUI extends JDialog {
         setVisible(true);
     }
 
-    // ==================== UI INITIALIZATION (SRP) ====================
-
-    /**
-     * SRP: HANYA membuat form fields.
-     * Satu alasan berubah: jika field buku berubah (misal tambah ISBN).
-     */
     private void initializeFormFields() {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -68,10 +48,12 @@ public class BookManagementGUI extends JDialog {
         priceField = createFormField(gbc, "Price:", 5, isUpdate ? String.valueOf(book.getPrice()) : "");
 
         // Image Label
-        gbc.gridx = 0; gbc.gridy = 6;
+        gbc.gridx = 0;
+        gbc.gridy = 6;
         add(new JLabel("Image:"), gbc);
         imageLabel = new JLabel(isUpdate ? book.getImagePath() : "No Image", SwingConstants.CENTER);
-        gbc.gridx = 1; gbc.gridy = 6;
+        gbc.gridx = 1;
+        gbc.gridy = 6;
         add(imageLabel, gbc);
     }
 
@@ -81,12 +63,14 @@ public class BookManagementGUI extends JDialog {
      * OCP: Jika ingin mengubah style field, cukup ubah method ini.
      */
     private JTextField createFormField(GridBagConstraints gbc, String label, int row, String value) {
-        gbc.gridx = 0; gbc.gridy = row;
+        gbc.gridx = 0;
+        gbc.gridy = row;
         add(new JLabel(label), gbc);
         JTextField field = new JTextField();
         field.setPreferredSize(new Dimension(200, 25));
         field.setText(value);
-        gbc.gridx = 1; gbc.gridy = row;
+        gbc.gridx = 1;
+        gbc.gridy = row;
         add(field, gbc);
         return field;
     }
@@ -98,12 +82,14 @@ public class BookManagementGUI extends JDialog {
         gbc.insets = new Insets(5, 5, 5, 5);
 
         JButton uploadButton = new JButton("Upload Image");
-        gbc.gridx = 0; gbc.gridy = 7;
+        gbc.gridx = 0;
+        gbc.gridy = 7;
         add(uploadButton, gbc);
         uploadButton.addActionListener(e -> uploadImage());
 
         JButton saveButton = new JButton(isUpdate ? "Update" : "Add");
-        gbc.gridx = 1; gbc.gridy = 7;
+        gbc.gridx = 1;
+        gbc.gridy = 7;
         add(saveButton, gbc);
         saveButton.addActionListener(e -> saveBook());
     }
@@ -130,7 +116,8 @@ public class BookManagementGUI extends JDialog {
      */
     private void saveBook() {
         // SRP: Validasi dipisahkan dari logika penyimpanan
-        if (!validateInput()) return;
+        if (!validateInput())
+            return;
 
         // SRP: Pengumpulan data dipisahkan dari logika penyimpanan
         String title = titleField.getText().trim();
@@ -149,7 +136,7 @@ public class BookManagementGUI extends JDialog {
             book.setStock(stock);
             book.setPrice(price);
             book.setImagePath(imagePath);
-            
+
             int index = parentGUI.bookDatabase.getBooks().indexOf(book);
             if (index != -1) {
                 parentGUI.updateBook(index, book);
