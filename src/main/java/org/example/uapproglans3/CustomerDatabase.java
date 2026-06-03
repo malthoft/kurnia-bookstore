@@ -6,6 +6,7 @@ import java.util.List;
 
 interface CustomerRepository {
     void saveCustomers(List<Customer> customers);
+
     List<Customer> loadCustomers();
 }
 
