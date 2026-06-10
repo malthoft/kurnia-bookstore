@@ -4,25 +4,20 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TransactionDatabase {
-    private List<Transaction> transactions;
-    private final String filePath = "transactions.dat";
+interface TransactionRepository {
+    void saveTransactions(List<Transaction> transactions);
+    List<Transaction> loadTransactions();
+}
 
-    public TransactionDatabase() {
-        transactions = new ArrayList<>();
-        loadTransactions();
+class FileTransactionRepository implements TransactionRepository {
+    private final String filePath;
+
+    public FileTransactionRepository(String filePath) {
+        this.filePath = filePath;
     }
 
-    public void addTransaction(Transaction transaction) {
-        transactions.add(transaction);
-        saveTransactions(); // Pastikan data disimpan setelah ditambahkan
-    }
-
-    public List<Transaction> getTransactions() {
-        return transactions;
-    }
-
-    private void saveTransactions() {
+    @Override
+    public void saveTransactions(List<Transaction> transactions) {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath))) {
             oos.writeObject(transactions);
         } catch (IOException e) {
@@ -30,15 +25,53 @@ public class TransactionDatabase {
         }
     }
 
-    private void loadTransactions() {
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<Transaction> loadTransactions() {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath))) {
-            transactions = (List<Transaction>) ois.readObject();
+            return (List<Transaction>) ois.readObject();
         } catch (FileNotFoundException e) {
             // File not found, starting with an empty list
+            return new ArrayList<>();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
+            return new ArrayList<>();
         }
     }
 }
 
+class TransactionService {
+    private List<Transaction> transactions;
+    private final TransactionRepository repository;
 
+    public TransactionService(TransactionRepository repository) {
+        this.repository = repository;
+        this.transactions = repository.loadTransactions();
+    }
+
+    public void addTransaction(Transaction transaction) {
+        transactions.add(transaction);
+        repository.saveTransactions(transactions);
+    }
+
+    public List<Transaction> getTransactions() {
+        return transactions;
+    }
+}
+
+public class TransactionDatabase {
+    private final TransactionService service;
+
+    public TransactionDatabase() {
+        TransactionRepository repo = new FileTransactionRepository("transactions.dat");
+        this.service = new TransactionService(repo);
+    }
+
+    public void addTransaction(Transaction transaction) {
+        service.addTransaction(transaction);
+    }
+
+    public List<Transaction> getTransactions() {
+        return service.getTransactions();
+    }
+}
